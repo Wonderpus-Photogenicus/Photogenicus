@@ -3,8 +3,7 @@ const apiController = {};
 // apiController will contain numerous methods that will be utilized within route handlers to handle communication with face-api.js & ultimately store response in res.locals.authResponse (or something similar)
 apiController.processImages = async (req, res, next) => {
   // imagesController.uploadImage middleware will provide us with the image to authenticate in: `res.locals.imageToAuthenticate`
-  const input = document.getElementById('myImage');
-  let fullFaceDescriptions = await faceapi;
+
   // imagesController.retrieveImages middleware will provide us with all the images in the `People` DB in: `res.locals.peopleInDb`
 
   // Provide the data to face-api.js for processing
