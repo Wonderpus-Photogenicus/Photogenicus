@@ -15,8 +15,16 @@ const imagesController = {};
 
 // This middleware will be utilized when the client makes a post request to the server with an image to test
 imagesController.uploadImage = (req, res, next) => {
+
   const addRow = db.prepare("INSERT INTO people (personName, image) VALUES (?, ?);");
   addRow.run("superhot", "delete");
+
+  //Webcam photo and headshot/reference file uploads will come in different spots
+  //multi-file uplaods currently not working for some reason? but one phot will always upload here
+  console.log("req files in uploadimage:" , req.files)
+
+  //webcam photos (for comparison) will be passed as a base64 string here
+  console.log("req body in uploadimage:" , req.body)
 
   // Deconstructs req.body object for `imageUpload` that will contain an image uploaded by our client
   // const { imageUpload } = req.body;

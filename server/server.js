@@ -6,7 +6,7 @@ const express = require('express');
 const app = express();
 const morgan = require('morgan');
 const cors = require('cors');
-
+console.log("config is: ", config)
 
 // imagesRouter handles all client requests to '/image' endpoint
 const imagesRouter = require('./routes/images.js');
@@ -47,8 +47,9 @@ app.use((err, req, res, next) => {
 });
 
 // Listen to server on specified port (defined within config.js)
-app.listen(config.PORT, () => {
-  console.log(`Server listening on port: 3001`);
+// app.listen(config.PORT, () => {
+app.listen(3001, () => {
+  console.log(`Server listening on port: ${3001}`);
 });
 
 // Export express app
