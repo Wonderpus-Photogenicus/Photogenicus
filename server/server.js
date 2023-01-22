@@ -3,22 +3,9 @@ const path = require('path');
 const fileUpload = require('express-fileupload');
 const express = require('express');
 
-const db = require('./models/image');
-
 const app = express();
 const morgan = require('morgan');
 const cors = require('cors');
-
-// Baseplate test for database
-const makeTable = "CREATE TABLE IF NOT EXISTS people ( personName VARCHAR(255), image BLOB);";
-const addJordy = db.prepare("INSERT INTO people (personName, image) VALUES ('Jordan', 'This works');");
-const addTest2 = db.prepare("INSERT INTO people (personName, image) VALUES ('testing', '12345');");
-const getTable = db.prepare("SELECT personName FROM people");
-
-db.exec(makeTable);
-addTest2.run();
-console.log(getTable.get());
-
 
 
 // imagesRouter handles all client requests to '/image' endpoint
@@ -61,7 +48,7 @@ app.use((err, req, res, next) => {
 
 // Listen to server on specified port (defined within config.js)
 app.listen(config.PORT, () => {
-  console.log(`Server listening on port: ${config.PORT}`);
+  console.log(`Server listening on port: 3001`);
 });
 
 // Export express app

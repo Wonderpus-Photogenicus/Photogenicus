@@ -1,12 +1,27 @@
 // require SQL dependency that allows us to query database i.e. People
 
+const db = require('../models/image')
+
+// Baseplate test for database
+
+const addTest2 = db.prepare("INSERT INTO people (personName, image) VALUES (?, ?);");
+addTest2.run("superhot", "delete");
+
+const getTable = db.prepare("SELECT * FROM people");
+console.log(getTable.all());
+
 // imagesController will contain numerous methods that will be utilized within route handlers to handle required functionality
 const imagesController = {};
 
 // This middleware will be utilized when the client makes a post request to the server with an image to test
 imagesController.uploadImage = (req, res, next) => {
+  const addRow = db.prepare("INSERT INTO people (personName, image) VALUES (?, ?);");
+  addRow.run("superhot", "delete");
+
   // Deconstructs req.body object for `imageUpload` that will contain an image uploaded by our client
   // const { imageUpload } = req.body;
+  // Jordan: The image will be on the request body as a buffer. This line parses the buffer into a blob file.
+  const imageToUpload = new Blob([req.body]);
   const { file } = req.files; // Using express-fileUpload package
 
   // Image should be stored in `res.locals.imageToAuthenticate`
