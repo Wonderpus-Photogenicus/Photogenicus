@@ -57,10 +57,13 @@ imagesController.retrieveImages = (req, res, next) => {
 
   // Execute SQL query to DB. If query fails, catch the Error that is thrown by sqlite3 and throw it to global error hanlder.
   try {
-    const peopleImages = getTable.all();
+    const peopleBuffers = getTable.all();
+    
+    const peopleImages = [];
 
-    // If necessary buffers can be converted to base 64 here using: Buffer.from().toString('base64'));
-    // That command coupled with an array/object to push all the values into should work.
+    for(let i = 0; i < peopleBuffers.length; i++){
+      peopleImages.push(Buffer.from(peopleBuffers[i].image).toString('base64'));
+    }
     
     // Store response of db into res.locals for access in next middleware
     res.locals.peopleInDb = peopleImages;
