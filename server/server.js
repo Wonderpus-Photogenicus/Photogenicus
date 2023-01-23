@@ -2,6 +2,7 @@ const config = require('./utils/config.js');
 const path = require('path');
 const fileUpload = require('express-fileupload');
 const express = require('express');
+
 const app = express();
 const morgan = require('morgan');
 const cors = require('cors');
@@ -31,7 +32,8 @@ app.use('*', (req, res) =>
   res.status(404).send("This is not the page you're looking for...")
 );
 
-// Global error handler
+app.use(express.json())
+
 app.use((err, req, res, next) => {
   const defaultErr = {
     log: 'Express error handler caught unknown middleware error',

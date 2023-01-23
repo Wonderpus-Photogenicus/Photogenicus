@@ -18,6 +18,7 @@ imagesController.uploadImage = (req, res, next) => {
 
 // This middleware will be utilized when the admin makes a batch upload request to the server with images of the new NYOI cohort
 imagesController.batchImageUpload = (req, res, next) => {
+
   // Images batch-uploaded utilizing drag-and-drop functionality will be stored within 'req.files'
   const addRow = db.prepare(
     'INSERT INTO people (personName, image) VALUES (?, ?);'
@@ -48,6 +49,7 @@ imagesController.batchImageUpload = (req, res, next) => {
   // const getTable1 = db.prepare('SELECT image FROM people');
   // console.log(getTable1.all());
 
+
   return next();
 };
 
@@ -55,6 +57,7 @@ imagesController.batchImageUpload = (req, res, next) => {
 imagesController.retrieveRefImages = (req, res, next) => {
   // Define SQL query parameters to retrieve all images currently stored in database
   const getTable = db.prepare('SELECT image FROM people');
+
 
   // Execute SQL query to DB. If query fails, catch the Error that is thrown by sqlite3 and throw it to global error hanlder.
   try {
