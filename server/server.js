@@ -6,8 +6,6 @@ const app = express();
 const morgan = require('morgan');
 const cors = require('cors');
 
-console.log("config is: ", config)
-
 // imagesRouter handles all client requests to '/image' endpoint
 const imagesRouter = require('./routes/images.js');
 
@@ -41,7 +39,7 @@ app.use((err, req, res, next) => {
     message: { err: 'An error occurred' },
   };
   const errorObj = Object.assign({}, defaultErr, err);
-  console.log(errorObj.log);
+  console.log(err);
   return res.status(errorObj.status).json(errorObj.message);
 });
 

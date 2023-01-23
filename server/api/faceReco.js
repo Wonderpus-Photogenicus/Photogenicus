@@ -1,60 +1,117 @@
-// tensorflow dependency is not required but speeds up operations drastically
-// Note: python must be installed on your local machine for this dependency to work
+// NB: Reference tensorflow.org documentation to setup using nodejs => dependency must be installed as root, npm does not allow this by-default, may have to enable root privileges prior to dependency installation
+const tf = require('@tensorflow/tfjs-node');
+// Load bindings for tensorflow
 require('@tensorflow/tfjs-node');
-const canvas = require('canvas');
-const faceapi = require('face-api.js');
 
-// Canvas allows use of HTMLCanvasElement, HTMLImageElement, and ImageData in the nodejs environment
-const { Canvas, Image, ImageData } = canvas;
-faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+const faceapi = require('@vladmandic/face-api');
+const fs = require('fs');
+const path = require('path');
 
-// Identify path of models/shards & execute loading utilizing relative file path
-const MODEL_URI = '../public/models';
+// Create a reference to models/assets required for face-api functionality
+const MODEL_URI = path.join(__dirname, '../public/models');
 
-// Schedule asynchronous actions from models utilizing Promise.all
-const ssdMobilenetv1 = `faceapi.nets.ssdMobilenetv1.loadFromUri(${MODEL_URI})`;
-const faceRecognitionNet = `faceapi.nets.faceRecognitionNet.loadFromUri(${MODEL_URI})`;
-const faceLandmark68Net = `faceapi.nets.faceLandmark68Net.loadFromUri(${MODEL_URI})`;
+// `b64ToTensor` converts webcam-captured image to rgb-type tensor to ensure compatibility with face-api
+const b64ToTensor = (queryImage) => {
+  // `queryImage` provided by UI begins with 'data:image/jpeg;base64, ...' — trim string to isolate base-64 prior to binary conversion
+  const trimB64 = queryImage.replace(/^data:image\/(png|jpeg);base64,/, '');
+  // Utilize Buffer.from to generate a binary from the isolated base-64 string
+  const b64ToBinary = Buffer.from(trimB64, 'base64');
+  // Decode `b64ToBinary` binary buffer into RGB-type tensor (RGB-type is achieved by specifying '3' as second argument to method)
+  const decodedTensor = faceapi.tf.node.decodeImage(b64ToBinary, 3);
+  // Specify batch-dimension for `decodedTensor`
+  const expandTensor = faceapi.tf.expandDims(decodedTensor, 0);
+  // Dispose of `decodedTensor` to prevent memory-leak, as tensors are not garbage-collected.
+  faceapi.tf.dispose([decodedTensor]);
+  // The disposal of `expandTensor` should be performed after use of `expandTensor` in the function below: `facialRecognition()`
+  return expandTensor;
+};
 
-const facialRecognition = async (queryImage, referenceImage) => {
-  // Only run the faceapi.detectSingleFace model once positive the above three models have loaded/resolved
-  try {
-    await Promise.all([ssdMobilenetv1, faceRecognitionNet, faceLandmark68Net]);
-  } catch (err) {
-    console.log('Error occurred in loading of models/assets', err);
-  }
+// `arrOfB64ToTensor` will pre-process array of base-64 strings retrieved from data into an array of rgb-tensors for use as referenceData
+const arrOfB64ToTensor = (referenceData) => {
+  const arrOfRefTensor = referenceData.map((refImg) => {
+    const decodedTensor = faceapi.tf.node.decodeImage(refImg, 3);
+    const expandTensor = faceapi.tf.expandDims(decodedTensor, 0);
+    faceapi.tf.dispose([decodedTensor]);
+    return expandTensor;
+  });
+  return arrOfRefTensor;
+};
 
-  // Form recognition will utilize faceapi.FaceMatcher to compare REFERENCE face descriptors to QUERY face descriptors
+// `imageToTensor` is simply for test-purposes prior to SQL-DB integration to test API functionality (supports: bmp/gif/jpeg/png -> 3d/4d tensor of decoded image)
+const imageToTensor = (path) => {
+  // Utilize `fs` to synchronously load path'ed image as binary into `imgBuff`
+  const imgBuff = fs.readFileSync(path);
+  // Decode `imgBuff` binary buffer into RGB-type tensor (RGB-type is achieved by specifying '3' as second argument to method)
+  const decodedTensor = faceapi.tf.node.decodeImage(imgBuff, 3);
+  // Specify batch-dimension for `decodedTensor`
+  const expandTensor = faceapi.tf.expandDims(decodedTensor, 0);
+  // Dispose of `decodedTensor` to prevent memory-leak, as tensors are not garbage-collected.
+  faceapi.tf.dispose([decodedTensor]);
+  // The disposal of `expandTensor` should be performed after use of `expandTensor` in the function below: `facialRecognition()`
+  return expandTensor;
+};
 
-  try {
-    // Compute face descriptors of `referenceImage`
-    const referenceData = await faceapi
-      .detectAllFaces(referenceImage)
-      .withFaceLandmarks()
-      .withFaceDescriptors();
+// `facialRecognition` will analyze descriptors generated from referenceData & descriptors generated from queryImage
+async function facialRecognition(queryImage, referenceData) {
+  // Pause thread of execution until all promises resolve — indicates resolution of models required to perform facial identification through face-api
+  await Promise.all([
+    faceapi.nets.ssdMobilenetv1.loadFromDisk(MODEL_URI),
+    faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_URI),
+    faceapi.nets.ageGenderNet.loadFromDisk(MODEL_URI),
+    faceapi.nets.faceRecognitionNet.loadFromDisk(MODEL_URI),
+    faceapi.nets.faceExpressionNet.loadFromDisk(MODEL_URI),
+  ]);
 
-    if (!referenceData.length) {
-      return;
-    }
+  // Configure `options` object to define threshold of confidence
+  const options = new faceapi.SsdMobilenetv1Options({
+    minConfidence: 0.1,
+    maxResults: 10,
+  });
 
-    // Use `referenceImage` face descriptor computation to initialize
-    const faceMatcher = new faceapi.FaceMatcher(referenceData);
+  // Iterate through referenceData to initialize FaceMatch with the cumulative descriptors present from batch-upload
+  let refDescriptors = [];
 
-    // Compute face descriptors of `queryImage`
-    const singleResult = await faceapi
-      .detectSingleFace(queryImage)
+  for (let i = 0; i < referenceData.length; i++) {
+    const detection = await faceapi
+      .detectSingleFace(referenceData[i])
       .withFaceLandmarks()
       .withFaceDescriptor();
-
-    // If singleResult is returned, compare this to our previously initialized faceMatcher (initialized with referenceData)
-    if (singleResult) {
-      const bestMatch = faceMatcher.findBestMatch(singleResult.descriptor);
-      console.log(bestMatch.toString());
-    }
-  } catch (err) {
-    console.log(
-      'Error occurred in attempting to perform facial recognition:',
-      err
-    );
+    refDescriptors.push(detection.descriptor);
   }
+
+  // Determine if facial descriptors were returned. If not, return, as no reference data is available to make comparison.
+  if (!refDescriptors.length) {
+    return;
+  }
+
+  // Initialize `FaceMatcher` utilizing detection results stored within `referenceResult` — faceMatcher can now be used for comparison
+  const faceMatcher = new faceapi.FaceMatcher(refDescriptors);
+
+  // `referenceData` refers to `expandTensor` returned from `imageToTensor` and must be disposed to avoid memory leak
+  faceapi.tf.dispose([referenceData]);
+
+  // Generate facial-descriptors utilizing `queryImage` for a single face detected in image
+  const singleResult = await faceapi
+    .detectSingleFace(queryImage)
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+
+  // `queryImage` refers to `expandTensor` returned from `b64ToTensor` and must be disposed to avoid memory leak
+  faceapi.tf.dispose([queryImage]);
+
+  // If facial-descriptors were detected in `queryImage`...
+  if (singleResult) {
+    // Use referenceData-initialized FaceMatcher: `faceMatcher`, to determine whether a match exists within referenceData
+    const bestMatch = faceMatcher.findBestMatch(singleResult.descriptor);
+    // findBestMatch() will return an automatically generated label from referenceData & a number indicative of degree of confidence
+    return bestMatch.toString();
+  }
+}
+
+// Export facialRecognition, b64ToTensor, imageToTensor, and arrOfB64ToTensor functions for import into apiController.js for use as middleware in route handlers
+module.exports = {
+  facialRecognition,
+  b64ToTensor,
+  imageToTensor,
+  arrOfB64ToTensor,
 };

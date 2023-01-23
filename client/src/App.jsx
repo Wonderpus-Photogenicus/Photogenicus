@@ -1,105 +1,124 @@
-// import './App.css';
-import React from 'react';
+import './styles/App.css';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Counter } from './features/counter/Counter.js'
-import { FileUploader } from "react-drag-drop-files";
-import axios from 'axios'; 
+import { FileUploader } from 'react-drag-drop-files';
+import axios from 'axios';
 import Webcam from 'react-webcam';
+import successLogo from '../assets/success.png';
+import denyLogo from '../assets/denied.png';
 
+const fileTypes = ['JPG', 'PNG'];
 
-
-const WebcamCapture = () => {
-  // const webcamRef = React.useRef(null);
-  // const [imgSrc, setImgSrc] = React.useState(null);
-
-  // const capture = React.useCallback(() => {
-  //   const imageSrc = webcamRef.current.getScreenshot();
-  //   setImgSrc(imageSrc);
-  // }, [webcamRef, setImgSrc]);
-  // const setRef = (webcam) => {
-  //   this.webcam = webcam;
-  // };
-
+const WebcamCapture = ({ setAuth }) => {
   const handleChange = (base64Image) => {
-    console.log(base64Image);
     axios({
       method: 'POST',
       url: 'http://localhost:3001/image',
-      // body: {base64Image},
-      data: {base64Image},
+      data: { base64Image },
       headers: {
-        "Content-Type": "multipart/form-data"
+        'Content-Type': 'multipart/form-data',
+      },
+    }).then((data) => {
+      if (data.request.responseText.includes('person')) {
+        setAuth(true);
+      } else {
+        setAuth(false);
       }
-    })
-  }
+      setTimeout(() => {
+        setAuth(null);
+      }, 5000);
+    });
+  };
 
   return (
-    <div>
-    <Webcam
-    audio={false}
-    height={720}
-    screenshotFormat="image/jpeg"
-    width={1280}
-    // videoConstraints={videoConstraints}
-  >
-    {({ getScreenshot }) => (
-      <button
-        onClick={() => {
-          const imageSrc = getScreenshot()
-          console.log(imageSrc)
-          handleChange(imageSrc)
-        }}
+    <div id='webcam-container'>
+      <Webcam
+        audio={false}
+        height={360}
+        screenshotFormat='image/jpeg'
+        width={480}
       >
-        Capture photo
-      </button>
-    )}
-  </Webcam>
-</div>
-
-
-
-    // <div>
-    //   <Webcam
-    //     audio={false}
-    //     screenshotFormat="image/jpeg"
-    //   >
-    //   {({ getScreenshot }) => (
-    //   <button
-    //     onClick={() => {
-    //       const imageSrc = getScreenshot()
-    //     }}
-    //   >Capture Photo</button>
-    //   </Webcam>
-    // </div>
+        {({ getScreenshot }) => (
+          <button
+            onClick={() => {
+              const imageSrc = getScreenshot();
+              handleChange(imageSrc);
+            }}
+            id='capture-button'
+          >
+            CAPTURE PHOTO
+          </button>
+        )}
+      </Webcam>
+    </div>
   );
 };
 
-
-
-
-
-
-
 const App = () => {
+  const [file, setFile] = useState(null);
+  const [auth, setAuth] = useState(null);
+  const [webcam, setWebcam] = useState(false);
+
   const handleChange = (files) => {
-    console.log(files);
+    setFile(files);
     axios({
       method: 'POST',
-      url: 'http://localhost:3001/image',
-      data: {files},
+      url: 'http://localhost:3001/image/batch',
+      data: { file },
       headers: {
-        "Content-Type": "multipart/form-data"
-      }
-    })
-  }
-  
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  };
+
+  const renderAuth = (status) => (
+    <img
+      className='auth_status'
+      src={status === true ? successLogo : denyLogo}
+    />
+  );
+
+  const handleCameraStatus = () => {
+    webcam ? setWebcam(false) : setWebcam(true);
+  };
+
   return (
-    <div>Hello from Team Photogenicus
-      <Counter></Counter>
-      <FileUploader handleChange={handleChange} name="file" types={undefined} />
-      <WebcamCapture />
+    <div id='container'>
+      <h1>photogenicus</h1>
+      <div className='image-containers'>
+        <div className='sub-container'>
+          {webcam && (
+            <p className='capture-subtext'>
+              <i>Click 'Capture Photo' to initiate authentication process.</i>
+            </p>
+          )}
+          {webcam && <WebcamCapture setAuth={setAuth} setWebcam={setWebcam} />}
+          <button className='webcam-status' onClick={handleCameraStatus}>
+            {`Click here to turn ${webcam ? 'off' : 'on'} your devices' camera`}
+          </button>
+          {auth === true ? renderAuth(true) : ''}
+          {auth === false ? renderAuth(false) : ''}
+        </div>
+        <div className='sub-container'>
+          <p className='upload-subtext'>
+            <i>Drag-and-drop identification photographs here.</i>
+          </p>
+          <FileUploader
+            handleChange={handleChange}
+            name='file'
+            types={fileTypes}
+            className='file-uploader'
+            height={360}
+            width={360}
+            multiple={true}
+            onDrop={(file) => console.log(`Your files have been received.`)}
+          />
+          <p className='drop-status'>
+            {file ? `File name: ${file.name}` : 'No files uploaded yet.'}
+          </p>
+        </div>
+      </div>
     </div>
-   
   );
 };
 
