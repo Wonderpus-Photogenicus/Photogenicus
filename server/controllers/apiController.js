@@ -1,20 +1,38 @@
 const apiController = {};
+const faceReco = require('../api/faceReco.js');
 
-// apiController will contain numerous methods that will be utilized within route handlers to handle communication with face-api.js & ultimately store response in res.locals.authResponse (or something similar)
+// This middleware will only be utilized when a user captures a photo with the <Webcam /> component.
+// `apiController.processImages` has access to `res.locals.uploadImage` & `res.locals.refData` from the `uploadImage` & `retrieveRefData` middleware, defined in imagesController.js, that precede the execution of this middleware
 apiController.processImages = async (req, res, next) => {
-  // imagesController.uploadImage middleware will provide us with the image to authenticate in: `res.locals.imageToAuthenticate`
-  const input = document.getElementById('myImage');
-  let fullFaceDescriptions = await faceapi;
-  // imagesController.retrieveImages middleware will provide us with all the images in the `People` DB in: `res.locals.peopleInDb`
+  // Pre-process base64 image within `res.locals.uploadImage` into rgb-tensor (from either 'blob' or 'base64')
+  const queryImage = faceReco.b64ToTensor(res.locals.uploadImage);
+  let referenceData = [];
 
-  // Provide the data to face-api.js for processing
+  // NB: Pre-process refData once certain of image-type upon retrieving from SQL DB
+  if (!res.locals.peopleInDb) {
+    next({ err: `No reference data found. Please try again: ${err}` });
+  } else {
+    referenceData = faceReco.arrOfB64ToTensor(res.locals.peopleInDb);
+  }
 
-  // Process response from face-api.js by comparing value with pre-defined thresholds (what should be considered 'authenticated' vs. 'not-authenticated')
+  // const testRefImg = faceReco.imageToTensor(
+  //   './utils/assets/referenceImages.png'
+  // );
 
-  // Store final outcome in `res.locals.auth`
-
-  // Move onto the next middleware
-  return next();
+  // Provide queryImage & referenceData rgb-tensors to `facialRecognition (queryImg, refImage)` function defined in main API script: `faceReco.js`
+  try {
+    const authenticationStatus = await faceReco.facialRecognition(
+      queryImage,
+      referenceData
+    );
+    // Store result of facial recognition function into `res.locals.authStatus` to send as response to client request
+    res.locals.authStatus = authenticationStatus;
+    // Continue to next middleware
+    return next();
+  } catch (err) {
+    // Invoke global error handler if error is thrown in invocation of asynchronous function `facialRecognition`
+    next({ err: `error occurred ${err}` });
+  }
 };
 
 // Export `apiController` for use within `routes/images.js`

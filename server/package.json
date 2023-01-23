@@ -10,7 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tensorflow/tfjs-node": "^4.2.0",
+    "@tensorflow/tfjs": "^3.7.0",
+    "@tensorflow/tfjs-node": "^3.7.0",
+    "@vladmandic/face-api": "^1.7.8",
     "better-sqlite3": "^8.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
