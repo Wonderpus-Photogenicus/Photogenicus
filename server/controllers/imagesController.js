@@ -6,10 +6,10 @@ const db = require('../models/image')
 
 // imagesController will contain numerous methods that will be utilized within route handlers to handle required functionality
 const imagesController = {};
-
 // This middleware will be utilized when the client makes a post request to the server with an image to test
 imagesController.uploadImage = (req, res, next) => {
-
+  console.log("in image controller")
+  // console.log(db.getall("SELECT * people"))
   //Webcam photo and headshot/reference file uploads will come in different spots
   //multi-file uplaods currently not working for some reason? but one phot will always upload here
   console.log("req files in uploadimage:" , req.files)
@@ -30,18 +30,24 @@ imagesController.uploadImage = (req, res, next) => {
 
 // This middleware will be utilized when the admin makes a batch upload request to the server with images of the new NYOI cohort
 imagesController.batchImageUpload = (req, res, next) => {
-
+  let stmt = db.prepare("SELECT * FROM people")
+  // console.log()
+  let allImages = stmt.all()
+  res.locals.allImages = allImages
   // Clarification note: This feature will take individual submissions of photos. Mutiple image submissions could run multiple requests from the front end using for loops.
   // The other option is for batch uploads of images to be merged into 1 mass image collage.
   // For the second option: a table with columns for orginization name, and batchimage blob file would be more appropriate.
   
   // Deconstructs req.body object for images included within batch-upload. Batch images should be recieved as a buffer anyway allowing direct input into tables.
-  const { batchImages } = req.body;
-
+  // const { batchImages } = req.body;
+  const newImage = req.files.filepond.data
+  // const { batchImages } = req.body;
+  const addRow = db.prepare('INSERT INTO people (personName, image) VALUES (?, ?)')
   // executes SQL query. failure of statement.run() method throws an error which will be caught and sent to the global error handler
   try {
     // person is a placeholder for names in the future. For the time being, names do not matter
-    const row = addRow.run('person', batchImages);
+    // const row = addRow.run('person', batchImages);
+    const row = addRow.run('person', newImage);
   } catch(err){
     return next({ log: err, message: 'database query failure in batchImageUpload'});
   }
@@ -67,6 +73,8 @@ imagesController.retrieveImages = (req, res, next) => {
     
     // Store response of db into res.locals for access in next middleware
     res.locals.peopleInDb = peopleImages;
+    // res.locals.peopleInDb = peopleBuffers;
+    next()
   } catch(err){
     return next({ log: err, message: 'database query failure in retrieveImages'});
   }

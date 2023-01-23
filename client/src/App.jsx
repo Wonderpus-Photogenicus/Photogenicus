@@ -6,6 +6,39 @@ import { FileUploader } from "react-drag-drop-files";
 import axios from 'axios'; 
 import Webcam from 'react-webcam';
 
+// Import React FilePond
+import { FilePond, File, registerPlugin } from 'react-filepond'
+
+// Import FilePond styles
+import 'filepond/dist/filepond.min.css'
+
+// Import the Image EXIF Orientation and Image Preview plugins
+// Note: These need to be installed separately
+// `npm i filepond-plugin-image-preview filepond-plugin-image-exif-orientation --save`
+import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation'
+import FilePondPluginImagePreview from 'filepond-plugin-image-preview'
+import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css'
+
+// Register the plugins
+registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview)
+
+// // Our app
+// const  FilePondHook () {
+//   const [files, setFiles] = useState([])
+//   return (
+//     <div className="App">
+//       <FilePond
+//         files={files}
+//         onupdatefiles={setFiles}
+//         allowMultiple={true}
+//         maxFiles={3}
+//         server="/api"
+//         name="files" {/* sets the file input name, it's filepond by default */}
+//         labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+//       />
+//     </div>
+//   )
+// }
 
 
 const WebcamCapture = () => {
@@ -40,6 +73,7 @@ const WebcamCapture = () => {
     height={720}
     screenshotFormat="image/jpeg"
     width={1280}
+    mirrored="true"
     // videoConstraints={videoConstraints}
   >
     {({ getScreenshot }) => (
@@ -81,23 +115,59 @@ const WebcamCapture = () => {
 
 
 const App = () => {
-  const handleChange = (files) => {
-    console.log(files);
+  // const handleChange = (files) => {
+  //   console.log("handleChange running");
+  //   axios({
+  //     method: 'POST',
+  //     url: 'http://localhost:3001/image',
+  //     data: {files},
+  //     headers: {
+  //       "Content-Type": "multipart/form-data"
+  //     }
+  //   })
+  //   .then()
+  // }
+  const filesProcessed = () => {
     axios({
-      method: 'POST',
-      url: 'http://localhost:3001/image',
-      data: {files},
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
+      method: 'GET',
+      url: 'http://localhost:3001/image/batchImages'
     })
+    .then(data => {
+      console.log(data)
+      imageArchive.push(data)
+      return data});
   }
-  
+
+  const imageArchive = []
+
+
   return (
     <div>Hello from Team Photogenicus
       <Counter></Counter>
-      <FileUploader handleChange={handleChange} name="file" types={undefined} />
+      <FilePond
+        // files={files}
+        // onupdatefiles={setFiles}
+        // onupdatefiles={files => {
+        //   const formData = new FormData();
+        //   files.forEach(item => formData.append('my-file', item.file))
+        //   console.log(formData)
+        //   // handleChange(formData)
+        // }}
+        onprocessfile={filesProcessed}
+        // onprocessfiles={files => {
+        //   filesProcessed();
+        //   // console.log('files processed', files);
+          
+        // }}
+        allowMultiple={true}
+        // maxFiles={}
+        server="http://localhost:3001/image/batchImages"
+        // name="files"
+        // labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+      />
+      {/* <FileUploader handleChange={handleChange} name="file" types={undefined} /> */}
       <WebcamCapture />
+      {imageArchive.length ? imageArchive : null}
     </div>
    
   );

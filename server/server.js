@@ -8,6 +8,7 @@ const morgan = require('morgan');
 const cors = require('cors');
 console.log("config is: ", config)
 
+
 // imagesRouter handles all client requests to '/image' endpoint
 const imagesRouter = require('./routes/images.js');
 
