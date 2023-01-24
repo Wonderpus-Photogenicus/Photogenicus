@@ -26,4 +26,8 @@ imagesRouter.post('/batch', imagesController.batchImageUpload, (req, res) => {
   res.status(200).send('Route completed.');
 });
 
+imagesRouter.get('/batch', imagesController.retrieveRefImages, (req, res) => {
+  res.status(200).json(res.locals.peopleInDb)
+})
+
 module.exports = imagesRouter;

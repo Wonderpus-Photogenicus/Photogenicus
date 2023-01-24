@@ -6,6 +6,7 @@ const path = require('path');
 
 // This middleware will be utilized when the client makes a post request to the server with an image to test
 imagesController.uploadImage = (req, res, next) => {
+  // console.log("req.body in uploadImage" , req.body)
   // Image captured utilizing webcam will be stored as base64-string in: `req.body.base64Image`
   const imageToAuthenticate = req.body.base64Image;
 
@@ -18,18 +19,22 @@ imagesController.uploadImage = (req, res, next) => {
 
 // This middleware will be utilized when the admin makes a batch upload request to the server with images of the new NYOI cohort
 imagesController.batchImageUpload = (req, res, next) => {
-
+console.log(req.files);
   // Images batch-uploaded utilizing drag-and-drop functionality will be stored within 'req.files'
   const addRow = db.prepare(
     'INSERT INTO people (personName, image) VALUES (?, ?);'
   );
   // Deconstructs req.body object for images included within batch-upload. Batch images should be recieved as a buffer anyway allowing direct input into tables.
-  const { batchImages } = req.body;
+  const batchImages = req.files.filepond.data;
 
   // Execute SQL insert query within try ... catch block; any error in DB interaction should be thrown
   try {
     // Iterate through `batchImages` arary and execute addRow.run for each image file passed by the file-upload UI
-    const row = addRow.run('person', batchImages);
+    const row = addRow.run('person', batchImages)
+    let allDbData = db.prepare('SELECT * FROM people').all()
+    // console.log(db.prepare('SELECT * FROM people').all())
+    // res.locals.allDbData = allDbData
+    next()
   } catch (err) {
     return next({
       log: err,
@@ -64,9 +69,12 @@ imagesController.retrieveRefImages = (req, res, next) => {
     const peopleBuffers = getTable.all();
 
     const peopleImages = [];
-
+    // console.log(peopleBuffers)
     for (let i = 0; i < peopleBuffers.length; i++) {
-      peopleImages.push(Buffer.from(peopleBuffers[i].image));
+      if (peopleBuffers[i].image) {
+        // peopleImages.push(peopleBuffers[i].image);
+        peopleImages.push(Buffer.from(peopleBuffers[i].image));
+      }
     }
 
     // Store response of db into res.locals for access in next middleware
