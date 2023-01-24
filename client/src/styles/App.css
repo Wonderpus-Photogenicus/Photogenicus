@@ -4,6 +4,12 @@
   padding: 0;
 }
 
+/* #container {
+  height: 50vh;
+  display:flex;
+  padding: 20px 
+}*/
+
 body {
   font-family: Arial, Helvetica, sans-serif;
   margin: 0 17.5%;
@@ -36,14 +42,50 @@ h1 {
   font-size: 1.1rem;
   margin-top: 10px;
   border: none;
-  opacity: 75%;
+  opacity: 100%;
   background-color: #2b6777;
   color: #f2f2f2;
   font-weight: 700;
 }
 
+video {
+  max-width: 100%
+}
+
 #webcam-container button:hover {
   cursor: pointer;
+  background-color: #334A52;
+  background-color: #334A52;
+  
+}
+#webcam-container button:active {
+  cursor: pointer;
+  opacity: 80%;
+}
+
+.filepond--wrapper {
+  height: 100%;
+  width: 100%;
+}
+
+.filepond--root {
+  height: 100%;
+  width: 100%;
+}
+
+.filepond--hopper {
+  height: 100%;
+  width: 100%;
+  background-color: blue;
+  border-color: #e9b39e;
+  border-style: solid;
+  border-width: 3px;
+  border-radius: 10px;
+}
+
+.bannerLogo {
+  margin-top: 15px;
+  max-width: 100%
 }
 
 .webcam-status {
@@ -55,6 +97,8 @@ h1 {
   display: flex;
   justify-content: space-between;
   background: linear-gradient(#2b6777, #2b6777) no-repeat center/2px 95%;
+  padding: 10px;
+  margin: 10px;
 }
 
 .lkjDVC {
@@ -95,7 +139,7 @@ h1 {
 .sub-container {
   display: flex;
   flex-direction: column;
-  height: 519px;
+  height: 70vh;
   width: 480px;
   align-items: center;
   padding: 30px;
@@ -104,6 +148,7 @@ h1 {
 .auth_status {
   position: absolute;
   top: 270px;
+  /* max-width: 100%; */
   height: 325px;
   width: 325px;
   opacity: 0.75;
